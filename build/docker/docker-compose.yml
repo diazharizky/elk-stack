@@ -1,0 +1,123 @@
+version: "3.4"
+services:
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+    restart: unless-stopped
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - type: bind
+        source: ../../config/elasticsearch/elasticsearch.yml
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+        read_only: true
+      - esdata01:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    ports:
+      - 60021:9200
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+    restart: unless-stopped
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - type: bind
+        source: ../../config/elasticsearch/elasticsearch.yml
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+        read_only: true
+      - esdata02:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    ports:
+      - 60022:9200
+
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+    restart: unless-stopped
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - type: bind
+        source: ../../config/elasticsearch/elasticsearch.yml
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+        read_only: true
+      - esdata03:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    ports:
+      - 60023:9200
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.7.0
+    restart: unless-stopped
+    depends_on:
+      - es01
+      - es02
+      - es03
+    volumes:
+      - type: bind
+        source: ../../config/logstash/logstash.yml
+        target: /usr/share/logstash/config/logstash.yml
+        read_only: true
+      - ../../config/logstash/pipeline:/usr/share/logstash/pipeline
+      - ../../config/logstash/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+    ports:
+      - 60024:5000
+    networks:
+      - elastic
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.7.0
+    volumes:
+      - type: bind
+        source: ../../config/kibana/kibana.yml
+        target: /usr/share/kibana/config/kibana.yml
+        read_only: true
+    depends_on:
+      - es01
+      - es02
+      - es03
+    ports:
+      - 60026:5601
+    networks:
+      - elastic
+
+volumes:
+  esdata01:
+    driver: local
+  esdata02:
+    driver: local
+  esdata03:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge

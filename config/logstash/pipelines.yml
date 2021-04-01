@@ -1,0 +1,6 @@
+- pipeline.id: input_base
+  path.config: /usr/share/logstash/pipeline/input_base.conf
+- pipeline.id: filter_sms_otp
+  path.config: /usr/share/logstash/pipeline/filter_sms_otp.conf
+- pipeline.id: output_elasticsearch
+  path.config: /usr/share/logstash/pipeline/output_elasticsearch.conf
